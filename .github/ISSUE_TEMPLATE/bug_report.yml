@@ -1,0 +1,50 @@
+name: Bug report
+description: Report incorrect behavior or a provider integration failure.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include tokens, account identifiers, email addresses, or unredacted credential paths.
+  - type: input
+    id: version
+    attributes:
+      label: Quota Tray version
+      placeholder: v0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Provider
+      options:
+        - Claude
+        - Codex
+        - Both
+        - Application UI or lifecycle
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the observed and expected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional redacted context

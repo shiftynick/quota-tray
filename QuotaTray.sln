@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuotaTray", "src\QuotaTray\QuotaTray.csproj", "{BFE6CB06-2DE3-4C08-B6F7-42A7985D42CF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuotaTray.Tests", "tests\QuotaTray.Tests\QuotaTray.Tests.csproj", "{8C85B423-58E6-4E31-8F56-A6EB07A34F21}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuotaTray.Probe", "tools\QuotaTray.Probe\QuotaTray.Probe.csproj", "{0906E131-E0E4-4725-927D-E49F9470221C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BFE6CB06-2DE3-4C08-B6F7-42A7985D42CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BFE6CB06-2DE3-4C08-B6F7-42A7985D42CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BFE6CB06-2DE3-4C08-B6F7-42A7985D42CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BFE6CB06-2DE3-4C08-B6F7-42A7985D42CF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C85B423-58E6-4E31-8F56-A6EB07A34F21}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C85B423-58E6-4E31-8F56-A6EB07A34F21}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C85B423-58E6-4E31-8F56-A6EB07A34F21}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C85B423-58E6-4E31-8F56-A6EB07A34F21}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0906E131-E0E4-4725-927D-E49F9470221C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0906E131-E0E4-4725-927D-E49F9470221C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0906E131-E0E4-4725-927D-E49F9470221C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0906E131-E0E4-4725-927D-E49F9470221C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

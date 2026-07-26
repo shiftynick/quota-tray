@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore .\QuotaTray.sln
+
+      - name: Test
+        run: dotnet test .\QuotaTray.sln -c Release --no-restore
+
+      - name: Package
+        shell: pwsh
+        run: .\scripts\package.ps1
+
+      - name: Create GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "${{ github.ref_name }}"
+          .\artifacts\QuotaTray-win-x64.zip
+          .\artifacts\QuotaTray-win-x64.zip.sha256
+          --title "Quota Tray ${{ github.ref_name }}"
+          --generate-notes

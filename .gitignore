@@ -1,0 +1,36 @@
+## .NET build output
+bin/
+obj/
+artifacts/
+TestResults/
+
+## Visual Studio and JetBrains
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+_ReSharper*/
+*.DotSettings.user
+
+## VS Code
+.vscode/
+
+## OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+## Local settings and credentials
+settings.json
+*.local.json
+.env
+.env.*
+!.env.example
+*.pfx
+*.snk
+
+## Logs and crash dumps
+*.log
+*.dmp

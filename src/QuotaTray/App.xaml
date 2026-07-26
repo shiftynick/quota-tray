@@ -1,0 +1,14 @@
+<Application x:Class="QuotaTray.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             ShutdownMode="OnExplicitShutdown">
+    <Application.Resources>
+        <SolidColorBrush x:Key="WindowBackground" Color="#111318" />
+        <SolidColorBrush x:Key="CardBackground" Color="#1A1D24" />
+        <SolidColorBrush x:Key="CardBorder" Color="#30343D" />
+        <SolidColorBrush x:Key="PrimaryText" Color="#F4F5F7" />
+        <SolidColorBrush x:Key="SecondaryText" Color="#A7ADB8" />
+        <SolidColorBrush x:Key="ClaudeAccent" Color="#D97757" />
+        <SolidColorBrush x:Key="CodexAccent" Color="#39C68A" />
+    </Application.Resources>
+</Application>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title">
+  <title id="title">Quota Tray gauge</title>
+  <path fill="#D97757" d="M128 20a108 108 0 0 0 0 216V188a60 60 0 0 1 0-120Z"/>
+  <path fill="#39C68A" d="M128 20a108 108 0 0 1 0 216V188a60 60 0 0 0 0-120Z"/>
+  <circle cx="128" cy="128" r="60" fill="#111318"/>
+  <path fill="#F4F5F7" d="M122 133a9 9 0 0 1 1-12l54-47a6 6 0 0 1 9 9l-47 54a9 9 0 0 1-13 1Z"/>
+</svg>

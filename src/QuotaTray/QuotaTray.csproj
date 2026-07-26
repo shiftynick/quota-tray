@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>QuotaTray</AssemblyName>
+    <RootNamespace>QuotaTray</RootNamespace>
+    <AssemblyTitle>Quota Tray</AssemblyTitle>
+    <Product>Quota Tray</Product>
+    <ApplicationIcon>..\..\assets\quota-tray.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>0.1.0</Version>
+    <Authors>shiftynick</Authors>
+    <Description>Windows tray utility for Claude and Codex subscription quotas.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/shiftynick/quota-tray</RepositoryUrl>
+  </PropertyGroup>
+  <ItemGroup>
+    <Resource Include="..\..\assets\quota-tray.ico" Link="Assets\quota-tray.ico" />
+  </ItemGroup>
+</Project>
