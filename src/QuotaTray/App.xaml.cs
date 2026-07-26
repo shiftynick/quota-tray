@@ -50,7 +50,7 @@ public partial class App : System.Windows.Application
             settings.AlwaysOnTop);
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         _window = new MainWindow(_viewModel);
-        _window.RefreshRequested += async (_, _) => await RefreshAsync();
+        _window.RefreshRequested += async (_, _) => await RefreshAsync(forceClaude: true);
         _window.SizeChanged += (_, _) =>
         {
             if (_window.IsVisible)
@@ -61,7 +61,7 @@ public partial class App : System.Windows.Application
 
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add("Open quotas", null, (_, _) => ShowWindow());
-        menu.Items.Add("Refresh", null, async (_, _) => await RefreshAsync());
+        menu.Items.Add("Refresh", null, async (_, _) => await RefreshAsync(forceClaude: true));
         _pacingMenuItem = new Forms.ToolStripMenuItem("Show weekly pacing and daily budget")
         {
             Checked = _viewModel.ShowPacingInsights,
@@ -160,7 +160,7 @@ public partial class App : System.Windows.Application
         }
     }
 
-    private async Task RefreshAsync()
+    private async Task RefreshAsync(bool forceClaude = false)
     {
         if (_viewModel is null ||
             Interlocked.Exchange(ref _refreshing, 1) == 1)
@@ -174,7 +174,7 @@ public partial class App : System.Windows.Application
         try
         {
             var claudeTask = ReadSafelyAsync(
-                _claudeService.ReadAsync,
+                token => _claudeService.ReadAsync(forceClaude, token),
                 "Claude",
                 _shutdown.Token);
             var codexTask = ReadSafelyAsync(

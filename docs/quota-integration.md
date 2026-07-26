@@ -132,9 +132,13 @@ ignored.
 ### Caching and rate limits
 
 - Successful Claude snapshots are cached for at least five minutes.
+- Manual refresh bypasses that cache when the previous provider request was at
+  least 30 seconds ago.
+- Repeated manual refreshes within 30 seconds reuse the current snapshot.
 - HTTP 429 honors `Retry-After` when present.
 - Without a usable `Retry-After`, Claude checks pause for ten minutes.
-- Cached data remains visible during the cooldown.
+- Cached data remains visible and is explicitly marked stale during the
+  cooldown.
 - The current application does not refresh or write Claude Code tokens. If the
   sign-in expires, the user must run Claude Code `/login`.
 
@@ -243,6 +247,8 @@ request is cancelled.
 
 - Both providers refresh immediately on startup.
 - Background refresh runs every five minutes.
+- Manual refresh asks Claude for fresh data instead of reusing the normal
+  five-minute cache.
 - Manual and scheduled refreshes are deduplicated.
 - Each provider has a 20-second application timeout.
 - Provider refreshes run concurrently.

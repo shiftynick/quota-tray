@@ -7,6 +7,14 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-07-26
+
+### Fixed
+
+- Manual refresh now bypasses Claude's normal five-minute cache.
+- Cached Claude data is explicitly marked stale when Anthropic rate limits
+  quota checks, including the retry time.
+
 ## [0.1.1] - 2026-07-26
 
 ### Added
@@ -30,6 +38,7 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   single-instance activation.
 - Windows CI, automated release packaging, tests, and public documentation.
 
-[Unreleased]: https://github.com/shiftynick/quota-tray/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/shiftynick/quota-tray/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/shiftynick/quota-tray/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/shiftynick/quota-tray/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/shiftynick/quota-tray/releases/tag/v0.1.0

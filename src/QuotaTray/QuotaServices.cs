@@ -13,6 +13,7 @@ namespace QuotaTray;
 public sealed class ClaudeQuotaService
 {
     private static readonly TimeSpan MinimumRefreshInterval = TimeSpan.FromMinutes(5);
+    internal static readonly TimeSpan ManualRefreshInterval = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan DefaultRateLimitCooldown = TimeSpan.FromMinutes(10);
     private static readonly HttpClient Http = new()
     {
@@ -20,7 +21,9 @@ public sealed class ClaudeQuotaService
     };
     private readonly object _cacheLock = new();
     private ProviderSnapshot? _cachedSnapshot;
-    private DateTimeOffset _nextRequestAt = DateTimeOffset.MinValue;
+    private DateTimeOffset _cacheValidUntil = DateTimeOffset.MinValue;
+    private DateTimeOffset _rateLimitedUntil = DateTimeOffset.MinValue;
+    private DateTimeOffset _lastRequestAt = DateTimeOffset.MinValue;
 
     private static readonly Dictionary<string, (int Order, string Label, double DurationMinutes)> KnownWindows =
         new(StringComparer.OrdinalIgnoreCase)
@@ -33,21 +36,38 @@ public sealed class ClaudeQuotaService
             ["seven_day_cowork"] = (6, "7-day Cowork", 10080)
         };
 
-    public async Task<ProviderSnapshot> ReadAsync(CancellationToken cancellationToken)
+    public Task<ProviderSnapshot> ReadAsync(CancellationToken cancellationToken) =>
+        ReadAsync(forceRefresh: false, cancellationToken);
+
+    public async Task<ProviderSnapshot> ReadAsync(
+        bool forceRefresh,
+        CancellationToken cancellationToken)
     {
         var now = DateTimeOffset.UtcNow;
         lock (_cacheLock)
         {
-            if (now < _nextRequestAt)
+            if (now < _rateLimitedUntil)
             {
                 if (_cachedSnapshot is not null)
                 {
-                    return _cachedSnapshot;
+                    return MarkRateLimited(_cachedSnapshot, _rateLimitedUntil);
                 }
 
                 throw new InvalidOperationException(
-                    $"Claude quota refresh paused until {_nextRequestAt.LocalDateTime:t}.");
+                    $"Claude quota refresh paused until {_rateLimitedUntil.LocalDateTime:t}.");
             }
+
+            if (ShouldUseCachedSnapshot(
+                _cachedSnapshot,
+                now,
+                _cacheValidUntil,
+                _lastRequestAt,
+                forceRefresh))
+            {
+                return _cachedSnapshot!;
+            }
+
+            _lastRequestAt = now;
         }
 
         var configRoot = Environment.GetEnvironmentVariable("CLAUDE_CONFIG_DIR");
@@ -95,19 +115,21 @@ public sealed class ClaudeQuotaService
         {
             var cooldown = GetRateLimitCooldown(response.Headers.RetryAfter);
             ProviderSnapshot? cached;
+            DateTimeOffset retryAt;
             lock (_cacheLock)
             {
-                _nextRequestAt = DateTimeOffset.UtcNow + cooldown;
+                _rateLimitedUntil = DateTimeOffset.UtcNow + cooldown;
+                retryAt = _rateLimitedUntil;
                 cached = _cachedSnapshot;
             }
 
             if (cached is not null)
             {
-                return cached;
+                return MarkRateLimited(cached, retryAt);
             }
 
             throw new HttpRequestException(
-                $"Claude rate limited quota checks; retry after {_nextRequestAt.LocalDateTime:t}.");
+                $"Claude rate limited quota checks; retry after {retryAt.LocalDateTime:t}.");
         }
 
         if (!response.IsSuccessStatusCode)
@@ -131,11 +153,39 @@ public sealed class ClaudeQuotaService
         lock (_cacheLock)
         {
             _cachedSnapshot = snapshot;
-            _nextRequestAt = DateTimeOffset.UtcNow + MinimumRefreshInterval;
+            _cacheValidUntil = DateTimeOffset.UtcNow + MinimumRefreshInterval;
+            _rateLimitedUntil = DateTimeOffset.MinValue;
         }
 
         return snapshot;
     }
+
+    internal static bool ShouldUseCachedSnapshot(
+        ProviderSnapshot? cachedSnapshot,
+        DateTimeOffset now,
+        DateTimeOffset cacheValidUntil,
+        DateTimeOffset lastRequestAt,
+        bool forceRefresh)
+    {
+        if (cachedSnapshot is null)
+        {
+            return false;
+        }
+
+        return forceRefresh
+            ? now < lastRequestAt + ManualRefreshInterval
+            : now < cacheValidUntil;
+    }
+
+    internal static ProviderSnapshot MarkRateLimited(
+        ProviderSnapshot cachedSnapshot,
+        DateTimeOffset retryAt) =>
+        cachedSnapshot with
+        {
+            Error =
+                $"Claude is rate limiting quota checks. Showing cached data; retry after " +
+                $"{retryAt.LocalDateTime:t}."
+        };
 
     internal static IReadOnlyList<QuotaWindowSnapshot> ParseUsageWindows(JsonElement root)
     {
