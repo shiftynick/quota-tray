@@ -6,6 +6,7 @@ namespace QuotaTray;
 public sealed record AppSettings
 {
     public bool ShowPacingInsights { get; init; }
+    public bool AlwaysOnTop { get; init; }
 }
 
 public sealed class SettingsStore

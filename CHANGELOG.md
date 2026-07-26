@@ -7,6 +7,17 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-07-26
+
+### Added
+
+- Persisted always-on-top option in the flyout and tray menu.
+
+### Changed
+
+- The flyout now resizes to its content instead of scrolling quota rows inside
+  the window.
+
 ## [0.1.0] - 2026-07-26
 
 ### Added
@@ -19,5 +30,6 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   single-instance activation.
 - Windows CI, automated release packaging, tests, and public documentation.
 
-[Unreleased]: https://github.com/shiftynick/quota-tray/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/shiftynick/quota-tray/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/shiftynick/quota-tray/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/shiftynick/quota-tray/releases/tag/v0.1.0

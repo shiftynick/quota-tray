@@ -22,6 +22,7 @@ public partial class App : System.Windows.Application
     private MainWindow? _window;
     private Forms.NotifyIcon? _trayIcon;
     private Forms.ToolStripMenuItem? _pacingMenuItem;
+    private Forms.ToolStripMenuItem? _alwaysOnTopMenuItem;
     private DispatcherTimer? _refreshTimer;
     private Icon? _appIcon;
     private Mutex? _instanceMutex;
@@ -44,10 +45,19 @@ public partial class App : System.Windows.Application
         StartInstanceListener();
 
         var settings = _settingsStore.Load();
-        _viewModel = new QuotaViewModel(settings.ShowPacingInsights);
+        _viewModel = new QuotaViewModel(
+            settings.ShowPacingInsights,
+            settings.AlwaysOnTop);
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         _window = new MainWindow(_viewModel);
         _window.RefreshRequested += async (_, _) => await RefreshAsync();
+        _window.SizeChanged += (_, _) =>
+        {
+            if (_window.IsVisible)
+            {
+                Dispatcher.BeginInvoke(() => PositionNearTray(_window));
+            }
+        };
 
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add("Open quotas", null, (_, _) => ShowWindow());
@@ -66,6 +76,20 @@ public partial class App : System.Windows.Application
             }
         };
         menu.Items.Add(_pacingMenuItem);
+        _alwaysOnTopMenuItem = new Forms.ToolStripMenuItem("Always on top")
+        {
+            Checked = _viewModel.AlwaysOnTop,
+            CheckOnClick = true
+        };
+        _alwaysOnTopMenuItem.CheckedChanged += (_, _) =>
+        {
+            if (_viewModel is not null &&
+                _viewModel.AlwaysOnTop != _alwaysOnTopMenuItem.Checked)
+            {
+                _viewModel.AlwaysOnTop = _alwaysOnTopMenuItem.Checked;
+            }
+        };
+        menu.Items.Add(_alwaysOnTopMenuItem);
         menu.Items.Add(new Forms.ToolStripSeparator());
         menu.Items.Add("Exit", null, (_, _) => ExitApplication());
 
@@ -209,8 +233,10 @@ public partial class App : System.Windows.Application
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(QuotaViewModel.ShowPacingInsights) ||
-            _viewModel is null)
+        if (_viewModel is null ||
+            e.PropertyName is not (
+                nameof(QuotaViewModel.ShowPacingInsights) or
+                nameof(QuotaViewModel.AlwaysOnTop)))
         {
             return;
         }
@@ -219,12 +245,17 @@ public partial class App : System.Windows.Application
         {
             _pacingMenuItem.Checked = _viewModel.ShowPacingInsights;
         }
+        if (_alwaysOnTopMenuItem is not null)
+        {
+            _alwaysOnTopMenuItem.Checked = _viewModel.AlwaysOnTop;
+        }
 
         try
         {
             _settingsStore.Save(new AppSettings
             {
-                ShowPacingInsights = _viewModel.ShowPacingInsights
+                ShowPacingInsights = _viewModel.ShowPacingInsights,
+                AlwaysOnTop = _viewModel.AlwaysOnTop
             });
         }
         catch (IOException)
@@ -269,6 +300,7 @@ public partial class App : System.Windows.Application
         }
 
         _window.Show();
+        _window.UpdateLayout();
         PositionNearTray(_window);
         _window.Activate();
     }

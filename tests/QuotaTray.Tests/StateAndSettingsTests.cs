@@ -3,6 +3,19 @@ namespace QuotaTray.Tests;
 public sealed class StateAndSettingsTests
 {
     [Fact]
+    public void AlwaysOnTop_NotifiesWhenChanged()
+    {
+        var viewModel = new QuotaViewModel();
+        var changedProperties = new List<string?>();
+        viewModel.PropertyChanged += (_, args) => changedProperties.Add(args.PropertyName);
+
+        viewModel.AlwaysOnTop = true;
+
+        Assert.True(viewModel.AlwaysOnTop);
+        Assert.Contains(nameof(QuotaViewModel.AlwaysOnTop), changedProperties);
+    }
+
+    [Fact]
     public void FailedRefresh_PreservesExistingWindowsAndMarksThemStale()
     {
         var now = DateTimeOffset.UtcNow;
@@ -34,9 +47,15 @@ public sealed class StateAndSettingsTests
         try
         {
             var store = new SettingsStore(path);
-            store.Save(new AppSettings { ShowPacingInsights = true });
+            store.Save(new AppSettings
+            {
+                ShowPacingInsights = true,
+                AlwaysOnTop = true
+            });
 
-            Assert.True(store.Load().ShowPacingInsights);
+            var settings = store.Load();
+            Assert.True(settings.ShowPacingInsights);
+            Assert.True(settings.AlwaysOnTop);
         }
         finally
         {
@@ -56,7 +75,9 @@ public sealed class StateAndSettingsTests
         File.WriteAllText(path, "{ definitely not json");
         try
         {
-            Assert.False(new SettingsStore(path).Load().ShowPacingInsights);
+            var settings = new SettingsStore(path).Load();
+            Assert.False(settings.ShowPacingInsights);
+            Assert.False(settings.AlwaysOnTop);
         }
         finally
         {

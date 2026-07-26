@@ -212,11 +212,15 @@ public sealed class QuotaViewModel : INotifyPropertyChanged
 {
     private bool _isRefreshing;
     private bool _showPacingInsights;
+    private bool _alwaysOnTop;
     private string _lastUpdatedText = "Starting…";
 
-    public QuotaViewModel(bool showPacingInsights = false)
+    public QuotaViewModel(
+        bool showPacingInsights = false,
+        bool alwaysOnTop = false)
     {
         _showPacingInsights = showPacingInsights;
+        _alwaysOnTop = alwaysOnTop;
         Claude = new ProviderQuotaViewModel(
             "Claude",
             new SolidColorBrush(MediaColor.FromRgb(217, 119, 87)));
@@ -247,6 +251,12 @@ public sealed class QuotaViewModel : INotifyPropertyChanged
             Claude.Rebuild(value);
             Codex.Rebuild(value);
         }
+    }
+
+    public bool AlwaysOnTop
+    {
+        get => _alwaysOnTop;
+        set => SetField(ref _alwaysOnTop, value);
     }
 
     public string LastUpdatedText

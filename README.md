@@ -56,9 +56,15 @@ Either provider can fail independently; the other will still be shown.
 ## Use
 
 - Left-click the tray icon to show or hide the quota window.
-- Right-click the tray icon to open, refresh, toggle pacing insights, or exit.
+- Right-click the tray icon to open, refresh, toggle pacing insights, keep the
+  window always on top, or exit.
 - Closing the window hides it to the notification area.
 - Starting Quota Tray again activates the already-running instance.
+- The flyout automatically grows or shrinks to fit its quota rows without an
+  inner scrollbar.
+
+Enable **Always on top** in the flyout or tray menu to keep the quota window
+above other applications. The preference is saved between launches.
 
 ### Optional pacing and daily budget
 
