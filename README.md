@@ -13,7 +13,8 @@ signed in on your computer.
 
 - Claude and Codex quota windows in one compact tray flyout
 - Remaining percentage and local reset time
-- Five-minute background refresh and manual refresh
+- Background refresh every 15–16.5 minutes, with a freshness check when the
+  flyout opens
 - Manual refresh bypasses the normal Claude cache, while repeated clicks within
   30 seconds are coalesced
 - Last-known data retained and clearly marked stale after failures

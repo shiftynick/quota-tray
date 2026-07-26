@@ -28,6 +28,8 @@ public partial class App : System.Windows.Application
     private Mutex? _instanceMutex;
     private EventWaitHandle? _showEvent;
     private Task? _showListener;
+    private DateTimeOffset? _lastClaudeFetchedAt;
+    private DateTimeOffset? _lastCodexFetchedAt;
     private int _refreshing;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -115,14 +117,22 @@ public partial class App : System.Windows.Application
             }
         };
 
-        _refreshTimer = new DispatcherTimer
+        _refreshTimer = new DispatcherTimer();
+        _refreshTimer.Tick += async (_, _) =>
         {
-            Interval = TimeSpan.FromMinutes(5)
+            _refreshTimer.Stop();
+            try
+            {
+                await RefreshAsync();
+            }
+            finally
+            {
+                ScheduleNextBackgroundRefresh();
+            }
         };
-        _refreshTimer.Tick += async (_, _) => await RefreshAsync();
-        _refreshTimer.Start();
+        ScheduleNextBackgroundRefresh();
 
-        ShowWindow();
+        ShowWindow(refreshIfStale: false);
         _ = RefreshAsync();
     }
 
@@ -142,7 +152,7 @@ public partial class App : System.Windows.Application
                     break;
                 }
 
-                Dispatcher.BeginInvoke(ShowWindow);
+                Dispatcher.BeginInvoke(() => ShowWindow());
             }
         });
     }
@@ -183,6 +193,15 @@ public partial class App : System.Windows.Application
                 _shutdown.Token);
             var results = await Task.WhenAll(claudeTask, codexTask);
 
+            if (results[0].FetchedAt is not null)
+            {
+                _lastClaudeFetchedAt = results[0].FetchedAt;
+            }
+            if (results[1].FetchedAt is not null)
+            {
+                _lastCodexFetchedAt = results[1].FetchedAt;
+            }
+
             _viewModel.Apply(results[0], results[1]);
             UpdateTrayText();
         }
@@ -192,6 +211,18 @@ public partial class App : System.Windows.Application
             _window?.SetRefreshEnabled(true);
             Interlocked.Exchange(ref _refreshing, 0);
         }
+    }
+
+    private void ScheduleNextBackgroundRefresh()
+    {
+        if (_refreshTimer is null || _shutdown.IsCancellationRequested)
+        {
+            return;
+        }
+
+        _refreshTimer.Interval =
+            RefreshPolicy.NextBackgroundInterval(Random.Shared.NextDouble());
+        _refreshTimer.Start();
     }
 
     private static async Task<ProviderSnapshot> ReadSafelyAsync(
@@ -292,7 +323,7 @@ public partial class App : System.Windows.Application
         }
     }
 
-    private void ShowWindow()
+    private void ShowWindow(bool refreshIfStale = true)
     {
         if (_window is null)
         {
@@ -303,6 +334,15 @@ public partial class App : System.Windows.Application
         _window.UpdateLayout();
         PositionNearTray(_window);
         _window.Activate();
+
+        if (refreshIfStale &&
+            RefreshPolicy.ShouldRefreshOnOpen(
+                DateTimeOffset.UtcNow,
+                _lastClaudeFetchedAt,
+                _lastCodexFetchedAt))
+        {
+            _ = RefreshAsync(forceClaude: true);
+        }
     }
 
     private static void PositionNearTray(Window window)

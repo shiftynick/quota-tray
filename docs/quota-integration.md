@@ -246,7 +246,9 @@ request is cancelled.
 ## Polling and errors
 
 - Both providers refresh immediately on startup.
-- Background refresh runs every five minutes.
+- Background refresh runs every 15 minutes with up to 10% random jitter.
+- Opening the flyout refreshes both providers when either snapshot is at least
+  two minutes old.
 - Manual refresh asks Claude for fresh data instead of reusing the normal
   five-minute cache.
 - Manual and scheduled refreshes are deduplicated.
