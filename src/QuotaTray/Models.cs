@@ -103,10 +103,22 @@ public sealed class QuotaWindowViewModel
 
 public sealed class ProviderQuotaViewModel : INotifyPropertyChanged
 {
+    private static readonly MediaBrush NeutralStatusForeground =
+        new SolidColorBrush(MediaColor.FromRgb(167, 173, 184));
+    private static readonly MediaBrush NeutralStatusBackground =
+        new SolidColorBrush(MediaColor.FromRgb(32, 36, 44));
+    private static readonly MediaBrush WarningStatusForeground =
+        new SolidColorBrush(MediaColor.FromRgb(255, 205, 112));
+    private static readonly MediaBrush WarningStatusBackground =
+        new SolidColorBrush(MediaColor.FromRgb(58, 45, 24));
     private readonly MediaBrush _accent;
     private ProviderSnapshot? _lastSnapshot;
     private string _planLabel = "";
     private string _statusMessage = "Loading…";
+    private MediaBrush _statusForeground = NeutralStatusForeground;
+    private MediaBrush _statusBackground = NeutralStatusBackground;
+    private System.Windows.Visibility _statusVisibility = System.Windows.Visibility.Visible;
+    private bool _isStale;
 
     public ProviderQuotaViewModel(string name, MediaBrush accent)
     {
@@ -129,6 +141,30 @@ public sealed class ProviderQuotaViewModel : INotifyPropertyChanged
         private set => SetField(ref _statusMessage, value);
     }
 
+    public MediaBrush StatusForeground
+    {
+        get => _statusForeground;
+        private set => SetField(ref _statusForeground, value);
+    }
+
+    public MediaBrush StatusBackground
+    {
+        get => _statusBackground;
+        private set => SetField(ref _statusBackground, value);
+    }
+
+    public System.Windows.Visibility StatusVisibility
+    {
+        get => _statusVisibility;
+        private set => SetField(ref _statusVisibility, value);
+    }
+
+    public bool IsStale
+    {
+        get => _isStale;
+        private set => SetField(ref _isStale, value);
+    }
+
     public string ShortSummary
     {
         get
@@ -142,9 +178,17 @@ public sealed class ProviderQuotaViewModel : INotifyPropertyChanged
     {
         if (snapshot.Error is not null)
         {
+            IsStale = true;
+            StatusForeground = WarningStatusForeground;
+            StatusBackground = WarningStatusBackground;
+            StatusVisibility = System.Windows.Visibility.Visible;
+
+            var lastSuccess = snapshot.FetchedAt is null
+                ? ""
+                : $" Last successful fetch {snapshot.FetchedAt.Value.LocalDateTime:t}.";
             StatusMessage = Windows.Count == 0
-                ? snapshot.Error
-                : $"Stale · {snapshot.Error}";
+                ? $"REFRESH FAILED · {snapshot.Error}"
+                : $"STALE DATA ·{lastSuccess} {snapshot.Error}";
             if (Windows.Count == 0)
             {
                 PlanLabel = "";
@@ -153,6 +197,7 @@ public sealed class ProviderQuotaViewModel : INotifyPropertyChanged
         }
 
         _lastSnapshot = snapshot;
+        IsStale = false;
         Rebuild(showPacingInsights);
     }
 
@@ -165,6 +210,11 @@ public sealed class ProviderQuotaViewModel : INotifyPropertyChanged
 
         PlanLabel = string.IsNullOrWhiteSpace(_lastSnapshot.Plan) ? "" : _lastSnapshot.Plan;
         StatusMessage = _lastSnapshot.Windows.Count == 0 ? "No quota windows returned." : "";
+        StatusForeground = NeutralStatusForeground;
+        StatusBackground = NeutralStatusBackground;
+        StatusVisibility = _lastSnapshot.Windows.Count == 0
+            ? System.Windows.Visibility.Visible
+            : System.Windows.Visibility.Collapsed;
         Windows.Clear();
 
         foreach (var window in _lastSnapshot.Windows)
@@ -193,9 +243,9 @@ public sealed class ProviderQuotaViewModel : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    private void SetField(ref string field, string value, [CallerMemberName] string? name = null)
+    private void SetField<T>(ref T field, T value, [CallerMemberName] string? name = null)
     {
-        if (field == value)
+        if (EqualityComparer<T>.Default.Equals(field, value))
         {
             return;
         }

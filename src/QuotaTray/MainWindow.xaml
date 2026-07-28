@@ -184,10 +184,17 @@
                                            Text="{Binding Claude.PlanLabel}"
                                            Style="{StaticResource SecondaryTextStyle}" />
                             </Grid>
-                            <TextBlock Text="{Binding Claude.StatusMessage}"
-                                       Style="{StaticResource SecondaryTextStyle}"
-                                       TextWrapping="Wrap"
-                                       Margin="0,7,0,0" />
+                            <Border Visibility="{Binding Claude.StatusVisibility}"
+                                    Background="{Binding Claude.StatusBackground}"
+                                    CornerRadius="7"
+                                    Padding="9,7"
+                                    Margin="0,9,0,2">
+                                <TextBlock Text="{Binding Claude.StatusMessage}"
+                                           Foreground="{Binding Claude.StatusForeground}"
+                                           FontWeight="SemiBold"
+                                           FontSize="11"
+                                           TextWrapping="Wrap" />
+                            </Border>
                             <ItemsControl ItemsSource="{Binding Claude.Windows}"
                                           ItemTemplate="{StaticResource QuotaWindowTemplate}" />
                         </StackPanel>
@@ -217,10 +224,17 @@
                                            Text="{Binding Codex.PlanLabel}"
                                            Style="{StaticResource SecondaryTextStyle}" />
                             </Grid>
-                            <TextBlock Text="{Binding Codex.StatusMessage}"
-                                       Style="{StaticResource SecondaryTextStyle}"
-                                       TextWrapping="Wrap"
-                                       Margin="0,7,0,0" />
+                            <Border Visibility="{Binding Codex.StatusVisibility}"
+                                    Background="{Binding Codex.StatusBackground}"
+                                    CornerRadius="7"
+                                    Padding="9,7"
+                                    Margin="0,9,0,2">
+                                <TextBlock Text="{Binding Codex.StatusMessage}"
+                                           Foreground="{Binding Codex.StatusForeground}"
+                                           FontWeight="SemiBold"
+                                           FontSize="11"
+                                           TextWrapping="Wrap" />
+                            </Border>
                             <ItemsControl ItemsSource="{Binding Codex.Windows}"
                                           ItemTemplate="{StaticResource QuotaWindowTemplate}" />
                         </StackPanel>

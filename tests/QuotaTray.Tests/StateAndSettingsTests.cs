@@ -31,12 +31,42 @@ public sealed class StateAndSettingsTests
         viewModel.Apply(success, showPacingInsights: false);
 
         viewModel.Apply(
-            ProviderSnapshot.Failed("Claude", "Network unavailable."),
+            new ProviderSnapshot(
+                "Claude",
+                null,
+                [],
+                "Network unavailable.",
+                now),
             showPacingInsights: false);
 
         Assert.Single(viewModel.Windows);
-        Assert.StartsWith("Stale", viewModel.StatusMessage);
+        Assert.True(viewModel.IsStale);
+        Assert.StartsWith("STALE DATA", viewModel.StatusMessage);
+        Assert.Contains($"Last successful fetch {now.LocalDateTime:t}", viewModel.StatusMessage);
         Assert.Contains("Network unavailable", viewModel.StatusMessage);
+        Assert.Equal(System.Windows.Visibility.Visible, viewModel.StatusVisibility);
+    }
+
+    [Fact]
+    public void SuccessfulRefresh_ClearsStaleWarning()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var snapshot = new ProviderSnapshot(
+            "Claude",
+            "Max",
+            [new QuotaWindowSnapshot("weekly", "7-day limit", 80, now.AddDays(6), TimeSpan.FromDays(7))],
+            null,
+            now);
+        var viewModel = new ProviderQuotaViewModel(
+            "Claude",
+            System.Windows.Media.Brushes.Orange);
+
+        viewModel.Apply(ProviderSnapshot.Failed("Claude", "Rate limited."), false);
+        viewModel.Apply(snapshot, false);
+
+        Assert.False(viewModel.IsStale);
+        Assert.Equal("", viewModel.StatusMessage);
+        Assert.Equal(System.Windows.Visibility.Collapsed, viewModel.StatusVisibility);
     }
 
     [Fact]

@@ -17,7 +17,8 @@ signed in on your computer.
   flyout opens
 - Manual refresh bypasses the normal Claude cache, while repeated clicks within
   30 seconds are coalesced
-- Last-known data retained and clearly marked stale after failures
+- Last-known data retained after failures, with a prominent stale-data warning,
+  last successful fetch time, and a stale marker in the tray tooltip
 - Optional weekly pacing and estimated daily budget
 - Multi-monitor-aware placement and single-instance behavior
 - No telemetry, account service, or application-owned backend

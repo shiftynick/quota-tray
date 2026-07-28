@@ -306,8 +306,11 @@ public partial class App : System.Windows.Application
             return;
         }
 
+        var claudeState = _viewModel.Claude.IsStale ? " STALE" : "";
+        var codexState = _viewModel.Codex.IsStale ? " STALE" : "";
         var text =
-            $"Claude {_viewModel.Claude.ShortSummary} | Codex {_viewModel.Codex.ShortSummary}";
+            $"Claude {_viewModel.Claude.ShortSummary}{claudeState} | " +
+            $"Codex {_viewModel.Codex.ShortSummary}{codexState}";
         _trayIcon.Text = text.Length <= 63 ? text : text[..63];
     }
 
