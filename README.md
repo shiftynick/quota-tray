@@ -3,15 +3,15 @@
 ![Quota Tray icon](assets/quota-tray.png)
 
 A small, local-only Windows tray utility for viewing the remaining quota and
-reset times associated with the Claude Code and Codex subscriptions already
-signed in on your computer.
+reset times associated with the Claude Code, Codex, and Cursor subscriptions
+already signed in on your computer.
 
 [![CI](https://github.com/shiftynick/quota-tray/actions/workflows/ci.yml/badge.svg)](https://github.com/shiftynick/quota-tray/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## Features
 
-- Claude and Codex quota windows in one compact tray flyout
+- Claude, Codex, and Cursor quota windows in one compact tray flyout
 - Remaining percentage and local reset time
 - Background refresh every 15–16.5 minutes, with a freshness check when the
   flyout opens
@@ -33,11 +33,15 @@ Quota Tray runs locally:
   credentials or refresh token.
 - Codex quota is requested through the installed `codex app-server`. Codex owns
   its credentials; Quota Tray does not read or modify them.
+- Cursor's local session token is read from
+  `%APPDATA%\Cursor\User\globalStorage\state.vscdb` and sent only to
+  `api2.cursor.sh`. Quota Tray may refresh the access token in memory for a
+  request; it never writes Cursor's database.
 - Credentials and quota data are not logged or sent to the developer.
 
-Claude's quota endpoint is not a stable public API contract and may change.
-See [the integration guide](docs/quota-integration.md) for the exact requests,
-parsing rules, and security boundaries.
+Claude's and Cursor's quota endpoints are not stable public API contracts and
+may change. See [the integration guide](docs/quota-integration.md) for the
+exact requests, parsing rules, and security boundaries.
 
 ## Install
 
@@ -54,8 +58,9 @@ unrecognized-app warning.
 - Windows 10 or Windows 11, x64
 - Claude Code signed into a Claude subscription
 - Codex installed and signed in with ChatGPT
+- Cursor signed in (for Cursor quota)
 
-Either provider can fail independently; the other will still be shown.
+Any provider can fail independently; the others will still be shown.
 
 ## Use
 
@@ -64,8 +69,8 @@ Either provider can fail independently; the other will still be shown.
   window always on top, or exit.
 - Closing the window hides it to the notification area.
 - Starting Quota Tray again activates the already-running instance.
-- The flyout automatically grows or shrinks to fit its quota rows without an
-  inner scrollbar.
+- The flyout stays compact and caps itself to the screen height, scrolling
+  only when needed.
 
 Enable **Always on top** in the flyout or tray menu to keep the quota window
 above other applications. The preference is saved between launches.
@@ -121,6 +126,6 @@ credential exposure or other security issues through the process in
 
 Quota Tray is available under the [MIT License](LICENSE).
 
-This project is not affiliated with, endorsed by, or sponsored by Anthropic or
-OpenAI. Claude, Claude Code, OpenAI, ChatGPT, and Codex are trademarks of their
-respective owners.
+This project is not affiliated with, endorsed by, or sponsored by Anthropic,
+OpenAI, or Cursor. Claude, Claude Code, OpenAI, ChatGPT, Codex, and Cursor are
+trademarks of their respective owners.

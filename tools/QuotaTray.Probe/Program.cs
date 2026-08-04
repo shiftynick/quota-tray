@@ -3,7 +3,8 @@ using QuotaTray;
 var providers = new (string Name, Func<CancellationToken, Task<ProviderSnapshot>> Read)[]
 {
     ("Claude", new ClaudeQuotaService().ReadAsync),
-    ("Codex", new CodexQuotaService().ReadAsync)
+    ("Codex", new CodexQuotaService().ReadAsync),
+    ("Cursor", new CursorQuotaService().ReadAsync)
 };
 
 var failed = false;

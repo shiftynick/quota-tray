@@ -43,7 +43,10 @@ public sealed class PacingCalculatorTests
         var snapshot = SnapshotWithWeeklyWindow();
         var viewModel = new QuotaViewModel(showPacingInsights: false);
 
-        viewModel.Apply(snapshot, snapshot with { Provider = "Codex" });
+        viewModel.Apply(
+            snapshot,
+            snapshot with { Provider = "Codex" },
+            snapshot with { Provider = "Cursor" });
 
         Assert.Equal(Visibility.Collapsed, viewModel.Claude.Windows[0].PacingVisibility);
 

@@ -28,6 +28,9 @@ email address, or unredacted credential file.
 - Claude credentials are read locally and sent only to Anthropic.
 - Claude credential files are never modified.
 - Codex owns all Codex credential access and refresh.
+- Cursor credentials are read locally from `state.vscdb` and sent only to
+  `api2.cursor.sh`. That database is never modified; token refresh stays in
+  memory for the request.
 - Quota and credential data are not sent to a Quota Tray backend.
 - No telemetry is collected.
 

@@ -16,6 +16,7 @@ public partial class App : System.Windows.Application
 
     private readonly ClaudeQuotaService _claudeService = new();
     private readonly CodexQuotaService _codexService = new();
+    private readonly CursorQuotaService _cursorService = new();
     private readonly CancellationTokenSource _shutdown = new();
     private readonly SettingsStore _settingsStore = new();
     private QuotaViewModel? _viewModel;
@@ -30,6 +31,7 @@ public partial class App : System.Windows.Application
     private Task? _showListener;
     private DateTimeOffset? _lastClaudeFetchedAt;
     private DateTimeOffset? _lastCodexFetchedAt;
+    private DateTimeOffset? _lastCursorFetchedAt;
     private int _refreshing;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -105,7 +107,7 @@ public partial class App : System.Windows.Application
         _trayIcon = new Forms.NotifyIcon
         {
             Icon = _appIcon ?? SystemIcons.Application,
-            Text = "Claude + Codex quotas",
+            Text = "Claude + Codex + Cursor quotas",
             Visible = true,
             ContextMenuStrip = menu
         };
@@ -191,7 +193,11 @@ public partial class App : System.Windows.Application
                 _codexService.ReadAsync,
                 "Codex",
                 _shutdown.Token);
-            var results = await Task.WhenAll(claudeTask, codexTask);
+            var cursorTask = ReadSafelyAsync(
+                _cursorService.ReadAsync,
+                "Cursor",
+                _shutdown.Token);
+            var results = await Task.WhenAll(claudeTask, codexTask, cursorTask);
 
             if (results[0].FetchedAt is not null)
             {
@@ -201,8 +207,12 @@ public partial class App : System.Windows.Application
             {
                 _lastCodexFetchedAt = results[1].FetchedAt;
             }
+            if (results[2].FetchedAt is not null)
+            {
+                _lastCursorFetchedAt = results[2].FetchedAt;
+            }
 
-            _viewModel.Apply(results[0], results[1]);
+            _viewModel.Apply(results[0], results[1], results[2]);
             UpdateTrayText();
         }
         finally
@@ -256,7 +266,7 @@ public partial class App : System.Windows.Application
         if (message.Contains("401", StringComparison.OrdinalIgnoreCase) ||
             message.Contains("Unauthorized", StringComparison.OrdinalIgnoreCase))
         {
-            return "Sign-in expired. Open the provider CLI and sign in again.";
+            return "Sign-in expired. Sign in again in Claude Code, Codex, or Cursor.";
         }
 
         return message.Length > 140 ? message[..140] + "..." : message;
@@ -308,9 +318,11 @@ public partial class App : System.Windows.Application
 
         var claudeState = _viewModel.Claude.IsStale ? " STALE" : "";
         var codexState = _viewModel.Codex.IsStale ? " STALE" : "";
+        var cursorState = _viewModel.Cursor.IsStale ? " STALE" : "";
         var text =
             $"Claude {_viewModel.Claude.ShortSummary}{claudeState} | " +
-            $"Codex {_viewModel.Codex.ShortSummary}{codexState}";
+            $"Codex {_viewModel.Codex.ShortSummary}{codexState} | " +
+            $"Cursor {_viewModel.Cursor.ShortSummary}{cursorState}";
         _trayIcon.Text = text.Length <= 63 ? text : text[..63];
     }
 
@@ -342,7 +354,8 @@ public partial class App : System.Windows.Application
             RefreshPolicy.ShouldRefreshOnOpen(
                 DateTimeOffset.UtcNow,
                 _lastClaudeFetchedAt,
-                _lastCodexFetchedAt))
+                _lastCodexFetchedAt,
+                _lastCursorFetchedAt))
         {
             _ = RefreshAsync(forceClaude: true);
         }
@@ -360,10 +373,23 @@ public partial class App : System.Windows.Application
         var cursor = Forms.Cursor.Position;
         var screen = Forms.Screen.FromPoint(cursor);
         var dpi = System.Windows.Media.VisualTreeHelper.GetDpi(window);
+        var maxHeightDip = Math.Max(
+            240,
+            (screen.WorkingArea.Height - 24) / dpi.DpiScaleY);
+        if (Math.Abs(window.MaxHeight - maxHeightDip) > 0.5)
+        {
+            window.MaxHeight = maxHeightDip;
+            window.UpdateLayout();
+        }
+
         var width = (int)Math.Ceiling(window.ActualWidth * dpi.DpiScaleX);
         var height = (int)Math.Ceiling(window.ActualHeight * dpi.DpiScaleY);
         var x = screen.WorkingArea.Right - width - 12;
         var y = screen.WorkingArea.Bottom - height - 12;
+        if (y < screen.WorkingArea.Top + 12)
+        {
+            y = screen.WorkingArea.Top + 12;
+        }
 
         SetWindowPos(
             handle,

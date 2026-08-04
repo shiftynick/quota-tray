@@ -1,8 +1,8 @@
-# Claude and Codex quota integration
+# Claude, Codex, and Cursor quota integration
 
 This document describes how Quota Tray reads subscription quota information.
-It covers subscription limits associated with Claude Code and ChatGPT sign-ins,
-not API billing or token accounting.
+It covers subscription limits associated with Claude Code, ChatGPT/Codex, and
+Cursor sign-ins, not API billing or token accounting.
 
 ## Support boundary
 
@@ -10,10 +10,15 @@ not API billing or token accounting.
   subscription OAuth credential.
 - Codex subscription quota requires the Codex CLI to be installed and signed
   in with ChatGPT authentication.
+- Cursor subscription quota requires the Cursor desktop app to be signed in on
+  this computer.
 - API keys are not substitutes for subscription OAuth credentials.
 - Quota readings are best-effort. Provider fields and endpoints can change.
 - Quota Tray reads Claude's credential file but never modifies it.
 - Quota Tray delegates all Codex credential access and refresh to Codex.
+- Quota Tray reads Cursor's local SQLite sign-in state read-only and never
+  writes it. Access-token refresh, when needed, is kept in memory for the
+  request only.
 
 ## Normalized data
 
@@ -243,25 +248,107 @@ Mapping rules:
 The app-server child process is terminated after the response or when the
 request is cancelled.
 
+## Cursor
+
+### Credential discovery
+
+On Windows, Quota Tray opens Cursor's local SQLite database read-only:
+
+```text
+%APPDATA%\Cursor\User\globalStorage\state.vscdb
+```
+
+Required `ItemTable` keys:
+
+| Key | Use |
+| --- | --- |
+| `cursorAuth/accessToken` | Bearer token for usage requests |
+| `cursorAuth/refreshToken` | In-memory refresh when the access token is expired |
+| `cursorAuth/stripeMembershipType` | Plan label when present |
+
+The database is never modified. Tokens are not logged or persisted by Quota
+Tray.
+
+### Usage request
+
+```http
+POST https://api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage
+Authorization: Bearer <CURSOR_ACCESS_TOKEN>
+Content-Type: application/json
+Connect-Protocol-Version: 1
+
+{}
+```
+
+When the access JWT is expired or near expiry, Quota Tray refreshes in memory:
+
+```http
+POST https://api2.cursor.sh/oauth/token
+Content-Type: application/json
+
+{
+  "grant_type": "refresh_token",
+  "client_id": "KbZUR41cY7W6zRSdpSUJ7I7mLYBKOCmB",
+  "refresh_token": "<CURSOR_REFRESH_TOKEN>"
+}
+```
+
+If refresh returns `shouldLogout: true` or no access token, the user must sign
+in to Cursor again. The refreshed access token is not written back to
+`state.vscdb`.
+
+Representative redacted response:
+
+```json
+{
+  "billingCycleStart": "1768399334000",
+  "billingCycleEnd": "1771077734000",
+  "planUsage": {
+    "includedSpend": 23222,
+    "remaining": 16778,
+    "limit": 40000,
+    "autoPercentUsed": 10.5,
+    "apiPercentUsed": 46.444,
+    "totalPercentUsed": 58.055
+  }
+}
+```
+
+Amounts are USD cents. Timestamps are Unix milliseconds, often encoded as
+strings.
+
+### Parsing
+
+1. Require a `planUsage` object.
+2. Build an **Included** window from `remaining` / `limit` when available.
+   If `remaining` is absent, use `max(0, limit - includedSpend) / limit`.
+   Otherwise fall back to `100 - totalPercentUsed`.
+3. Build **Auto + Composer** from `autoPercentUsed` when present.
+4. Build **API models** from `apiPercentUsed` when present.
+5. Use `billingCycleEnd` as the reset time and
+   `billingCycleEnd - billingCycleStart` as the window duration.
+
+Cursor's usage API is undocumented and may change without notice.
+
 ## Polling and errors
 
-- Both providers refresh immediately on startup.
+- All providers refresh immediately on startup.
 - Background refresh runs every 15 minutes with up to 10% random jitter.
-- Opening the flyout refreshes both providers when either snapshot is at least
+- Opening the flyout refreshes providers when any snapshot is at least
   two minutes old.
 - Manual refresh asks Claude for fresh data instead of reusing the normal
   five-minute cache.
 - Manual and scheduled refreshes are deduplicated.
 - Each provider has a 20-second application timeout.
 - Provider refreshes run concurrently.
-- One provider's failure does not discard the other provider's result.
+- One provider's failure does not discard the other providers' results.
 - A failed refresh retains existing windows and marks them stale.
 - Shutdown cancels in-flight refresh work.
 
 ## Weekly pacing and daily budget
 
 Pacing insights are an optional local calculation and are disabled by default.
-They are not daily quotas reported by Claude or Codex.
+They are not daily quotas reported by Claude, Codex, or Cursor.
 
 For windows of six days or longer:
 
@@ -281,19 +368,22 @@ The calculation assumes usage is paced evenly across the rolling window.
 - Never log OAuth tokens, authorization headers, raw credential files, raw
   provider responses, account identifiers, or email addresses.
 - Never send credentials or quota data to an application-owned server.
-- Resolve credential paths from the current user's profile or
-  `CLAUDE_CONFIG_DIR`.
+- Resolve credential paths from the current user's profile,
+  `CLAUDE_CONFIG_DIR`, or the standard Cursor `ApplicationData` location.
 - Keep provider calls in the local trusted process.
 - Use HTTPS, request timeouts, and bounded response handling.
 - Treat provider failures as recoverable and never automatically log the user
   out.
+- Never write to Cursor's `state.vscdb`.
 
 ## Manual verification
 
 1. Compare Claude remaining percentages and reset times with Claude Code
    `/usage`.
 2. Compare Codex values with the Codex usage/status surface.
-3. Expire or remove one provider sign-in and confirm the other still refreshes.
-4. Disconnect the network and confirm the last snapshot is retained as stale.
-5. Confirm no credential value appears in the process command line, UI, logs,
+3. Compare Cursor included / Auto / API remaining percentages with
+   Cursor Settings → Usage or [cursor.com/dashboard](https://cursor.com/dashboard).
+4. Expire or remove one provider sign-in and confirm the others still refresh.
+5. Disconnect the network and confirm the last snapshot is retained as stale.
+6. Confirm no credential value appears in the process command line, UI, logs,
    or crash output.

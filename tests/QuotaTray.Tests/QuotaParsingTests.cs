@@ -104,4 +104,103 @@ public sealed class QuotaParsingTests
             window => Assert.Equal("5-hour limit", window.Label),
             window => Assert.Equal("7-day limit", window.Label));
     }
+
+    [Fact]
+    public void CursorParser_MapsIncludedAndPoolWindowsFromCents()
+    {
+        using var document = JsonDocument.Parse(
+            """
+            {
+              "billingCycleStart": "1768399334000",
+              "billingCycleEnd": "1771077734000",
+              "planUsage": {
+                "totalSpend": 23222,
+                "includedSpend": 23222,
+                "bonusSpend": 0,
+                "remaining": 16778,
+                "limit": 40000,
+                "autoPercentUsed": 10.5,
+                "apiPercentUsed": 46.444,
+                "totalPercentUsed": 58.055
+              }
+            }
+            """);
+
+        var snapshot = CursorQuotaService.ParseUsage(document.RootElement, "ultra");
+
+        Assert.Equal("Ultra", snapshot.Plan);
+        Assert.Collection(
+            snapshot.Windows,
+            window =>
+            {
+                Assert.Equal("Included", window.Label);
+                Assert.Equal(41.945, window.RemainingPercent, 3);
+                Assert.Equal(
+                    DateTimeOffset.FromUnixTimeMilliseconds(1771077734000),
+                    window.ResetsAt);
+                Assert.Equal(TimeSpan.FromMilliseconds(2678400000), window.Duration);
+            },
+            window =>
+            {
+                Assert.Equal("Auto + Composer", window.Label);
+                Assert.Equal(89.5, window.RemainingPercent);
+            },
+            window =>
+            {
+                Assert.Equal("API models", window.Label);
+                Assert.Equal(53.556, window.RemainingPercent, 3);
+            });
+    }
+
+    [Fact]
+    public void CursorParser_DerivesRemainingWhenFieldIsMissing()
+    {
+        using var document = JsonDocument.Parse(
+            """
+            {
+              "billingCycleStart": "1783476262000",
+              "billingCycleEnd": "1786154662000",
+              "planUsage": {
+                "includedSpend": 2000,
+                "limit": 2000,
+                "autoPercentUsed": 39.57666666666667,
+                "apiPercentUsed": 88.57777777777778,
+                "totalPercentUsed": 45.96811594202899
+              }
+            }
+            """);
+
+        var snapshot = CursorQuotaService.ParseUsage(document.RootElement, "pro");
+
+        Assert.Equal("Pro", snapshot.Plan);
+        Assert.Equal(0, snapshot.Windows[0].RemainingPercent);
+        Assert.Equal("Included", snapshot.Windows[0].Label);
+        Assert.Equal(60.42333333333333, snapshot.Windows[1].RemainingPercent, 5);
+        Assert.Equal(11.42222222222222, snapshot.Windows[2].RemainingPercent, 5);
+    }
+
+    [Fact]
+    public void CursorJwtExpiry_DetectsExpiredTokens()
+    {
+        var past = DateTimeOffset.UtcNow.AddMinutes(-10).ToUnixTimeSeconds();
+        var jwt = BuildUnsignedJwt(past);
+
+        Assert.True(CursorQuotaService.IsExpiredOrExpiring(jwt));
+        Assert.Equal(
+            DateTimeOffset.FromUnixTimeSeconds(past),
+            CursorQuotaService.TryReadJwtExpiry(jwt));
+    }
+
+    private static string BuildUnsignedJwt(long expSeconds)
+    {
+        static string Encode(string value)
+        {
+            return Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(value))
+                .TrimEnd('=')
+                .Replace('+', '-')
+                .Replace('/', '_');
+        }
+
+        return $"{Encode("{}")}.{Encode($"{{\"exp\":{expSeconds}}}")}.sig";
+    }
 }

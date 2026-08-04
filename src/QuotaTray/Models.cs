@@ -93,6 +93,8 @@ public sealed class QuotaWindowViewModel
     public required MediaBrush Accent { get; init; }
     public string RemainingLabel => $"{Math.Round(RemainingPercent):0}% left";
     public required string ResetLabel { get; init; }
+    public System.Windows.Visibility ResetVisibility { get; init; } =
+        System.Windows.Visibility.Visible;
     public string PaceLabel { get; init; } = "";
     public string AverageLabel { get; init; } = "";
     public MediaBrush PaceBrush { get; init; } =
@@ -217,9 +219,12 @@ public sealed class ProviderQuotaViewModel : INotifyPropertyChanged
             : System.Windows.Visibility.Collapsed;
         Windows.Clear();
 
+        var isFirstWindow = true;
         foreach (var window in _lastSnapshot.Windows)
         {
             var pacing = showPacingInsights ? PacingCalculator.Calculate(window) : null;
+            var showReset = isFirstWindow;
+            isFirstWindow = false;
             Windows.Add(new QuotaWindowViewModel
             {
                 Label = window.Label,
@@ -228,6 +233,9 @@ public sealed class ProviderQuotaViewModel : INotifyPropertyChanged
                 ResetLabel = window.ResetsAt is null
                     ? "Reset time unavailable"
                     : $"Resets {window.ResetsAt.Value.LocalDateTime:g}",
+                ResetVisibility = showReset
+                    ? System.Windows.Visibility.Visible
+                    : System.Windows.Visibility.Collapsed,
                 PaceLabel = pacing?.PaceLabel ?? "",
                 AverageLabel = pacing?.AverageLabel ?? "",
                 PaceBrush = pacing?.PaceBrush ??
@@ -277,10 +285,14 @@ public sealed class QuotaViewModel : INotifyPropertyChanged
         Codex = new ProviderQuotaViewModel(
             "Codex",
             new SolidColorBrush(MediaColor.FromRgb(57, 198, 138)));
+        Cursor = new ProviderQuotaViewModel(
+            "Cursor",
+            new SolidColorBrush(MediaColor.FromRgb(91, 141, 239)));
     }
 
     public ProviderQuotaViewModel Claude { get; }
     public ProviderQuotaViewModel Codex { get; }
+    public ProviderQuotaViewModel Cursor { get; }
 
     public bool IsRefreshing
     {
@@ -300,6 +312,7 @@ public sealed class QuotaViewModel : INotifyPropertyChanged
 
             Claude.Rebuild(value);
             Codex.Rebuild(value);
+            Cursor.Rebuild(value);
         }
     }
 
@@ -315,16 +328,22 @@ public sealed class QuotaViewModel : INotifyPropertyChanged
         private set => SetField(ref _lastUpdatedText, value);
     }
 
-    public void Apply(ProviderSnapshot claude, ProviderSnapshot codex)
+    public void Apply(
+        ProviderSnapshot claude,
+        ProviderSnapshot codex,
+        ProviderSnapshot cursor)
     {
         Claude.Apply(claude, ShowPacingInsights);
         Codex.Apply(codex, ShowPacingInsights);
+        Cursor.Apply(cursor, ShowPacingInsights);
 
-        var successfulTimes = new[] { claude, codex }
+        var successfulTimes = new[] { claude, codex, cursor }
             .Where(snapshot => snapshot.Error is null && snapshot.FetchedAt is not null)
             .Select(snapshot => snapshot.FetchedAt!.Value)
             .ToArray();
-        var hasError = claude.Error is not null || codex.Error is not null;
+        var hasError = claude.Error is not null ||
+                       codex.Error is not null ||
+                       cursor.Error is not null;
 
         if (successfulTimes.Length == 0)
         {

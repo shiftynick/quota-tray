@@ -10,5 +10,6 @@
         <SolidColorBrush x:Key="SecondaryText" Color="#A7ADB8" />
         <SolidColorBrush x:Key="ClaudeAccent" Color="#D97757" />
         <SolidColorBrush x:Key="CodexAccent" Color="#39C68A" />
+        <SolidColorBrush x:Key="CursorAccent" Color="#5B8DEF" />
     </Application.Resources>
 </Application>

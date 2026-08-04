@@ -7,6 +7,19 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-08-04
+
+### Added
+
+- Cursor subscription quota via the local Cursor sign-in and
+  `GetCurrentPeriodUsage`, showing included allowance plus Auto and API pools.
+
+### Changed
+
+- Flyout layout is denser so three providers fit more screens; height is capped
+  to the working area with scrolling only when needed. Reset time is shown once
+  per provider instead of on every quota row.
+
 ## [0.1.4] - 2026-07-28
 
 ### Fixed

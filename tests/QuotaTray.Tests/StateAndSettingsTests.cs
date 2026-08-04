@@ -70,6 +70,32 @@ public sealed class StateAndSettingsTests
     }
 
     [Fact]
+    public void ProviderWindows_ShowResetOnlyOnFirstRow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var viewModel = new ProviderQuotaViewModel(
+            "Cursor",
+            System.Windows.Media.Brushes.CornflowerBlue);
+
+        viewModel.Apply(
+            new ProviderSnapshot(
+                "Cursor",
+                "Pro",
+                [
+                    new QuotaWindowSnapshot("included", "Included", 10, now.AddDays(20), TimeSpan.FromDays(30)),
+                    new QuotaWindowSnapshot("auto", "Auto + Composer", 60, now.AddDays(20), TimeSpan.FromDays(30)),
+                    new QuotaWindowSnapshot("api", "API models", 20, now.AddDays(20), TimeSpan.FromDays(30))
+                ],
+                null,
+                now),
+            showPacingInsights: false);
+
+        Assert.Equal(System.Windows.Visibility.Visible, viewModel.Windows[0].ResetVisibility);
+        Assert.Equal(System.Windows.Visibility.Collapsed, viewModel.Windows[1].ResetVisibility);
+        Assert.Equal(System.Windows.Visibility.Collapsed, viewModel.Windows[2].ResetVisibility);
+    }
+
+    [Fact]
     public void SettingsStore_RoundTripsPacingPreference()
     {
         var root = Path.Combine(Path.GetTempPath(), "QuotaTray.Tests", Guid.NewGuid().ToString("N"));

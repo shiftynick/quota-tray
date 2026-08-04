@@ -12,13 +12,16 @@
     <Product>Quota Tray</Product>
     <ApplicationIcon>..\..\assets\quota-tray.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>0.1.4</Version>
+    <Version>0.1.5</Version>
     <Authors>shiftynick</Authors>
-    <Description>Windows tray utility for Claude and Codex subscription quotas.</Description>
+    <Description>Windows tray utility for Claude, Codex, and Cursor subscription quotas.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/shiftynick/quota-tray</RepositoryUrl>
   </PropertyGroup>
   <ItemGroup>
     <Resource Include="..\..\assets\quota-tray.ico" Link="Assets\quota-tray.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.22" />
   </ItemGroup>
 </Project>

@@ -17,9 +17,11 @@ internal static class RefreshPolicy
     internal static bool ShouldRefreshOnOpen(
         DateTimeOffset now,
         DateTimeOffset? claudeFetchedAt,
-        DateTimeOffset? codexFetchedAt) =>
+        DateTimeOffset? codexFetchedAt,
+        DateTimeOffset? cursorFetchedAt = null) =>
         IsStale(now, claudeFetchedAt) ||
-        IsStale(now, codexFetchedAt);
+        IsStale(now, codexFetchedAt) ||
+        IsStale(now, cursorFetchedAt);
 
     private static bool IsStale(
         DateTimeOffset now,
