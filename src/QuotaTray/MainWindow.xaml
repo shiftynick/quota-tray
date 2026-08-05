@@ -57,6 +57,14 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style x:Key="ProviderRefreshButtonStyle" TargetType="Button" BasedOn="{StaticResource HeaderButtonStyle}">
+            <Setter Property="Width" Value="22" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="ToolTip" Value="Refresh this provider" />
+        </Style>
         <Style x:Key="ProviderCardStyle" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource CardBackground}" />
             <Setter Property="BorderBrush" Value="{StaticResource CardBorder}" />
@@ -194,10 +202,21 @@
                                                FontSize="14"
                                                FontWeight="Bold" />
                                 </StackPanel>
-                                <TextBlock Grid.Column="1"
-                                           Text="{Binding Claude.PlanLabel}"
-                                           Style="{StaticResource SecondaryTextStyle}"
-                                           FontSize="11" />
+                                <StackPanel Grid.Column="1"
+                                            Orientation="Horizontal"
+                                            VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Claude.PlanLabel}"
+                                               Style="{StaticResource SecondaryTextStyle}"
+                                               FontSize="11"
+                                               VerticalAlignment="Center" />
+                                    <Button Content="{Binding Claude.RefreshGlyph}"
+                                            IsEnabled="{Binding Claude.CanRefresh}"
+                                            Style="{StaticResource ProviderRefreshButtonStyle}"
+                                            Tag="Claude"
+                                            ToolTip="Refresh Claude"
+                                            AutomationProperties.Name="Refresh Claude"
+                                            Click="ProviderRefreshButton_Click" />
+                                </StackPanel>
                             </Grid>
                             <Border Visibility="{Binding Claude.StatusVisibility}"
                                     Background="{Binding Claude.StatusBackground}"
@@ -231,10 +250,21 @@
                                                FontSize="14"
                                                FontWeight="Bold" />
                                 </StackPanel>
-                                <TextBlock Grid.Column="1"
-                                           Text="{Binding Codex.PlanLabel}"
-                                           Style="{StaticResource SecondaryTextStyle}"
-                                           FontSize="11" />
+                                <StackPanel Grid.Column="1"
+                                            Orientation="Horizontal"
+                                            VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Codex.PlanLabel}"
+                                               Style="{StaticResource SecondaryTextStyle}"
+                                               FontSize="11"
+                                               VerticalAlignment="Center" />
+                                    <Button Content="{Binding Codex.RefreshGlyph}"
+                                            IsEnabled="{Binding Codex.CanRefresh}"
+                                            Style="{StaticResource ProviderRefreshButtonStyle}"
+                                            Tag="Codex"
+                                            ToolTip="Refresh Codex"
+                                            AutomationProperties.Name="Refresh Codex"
+                                            Click="ProviderRefreshButton_Click" />
+                                </StackPanel>
                             </Grid>
                             <Border Visibility="{Binding Codex.StatusVisibility}"
                                     Background="{Binding Codex.StatusBackground}"
@@ -269,10 +299,21 @@
                                                FontSize="14"
                                                FontWeight="Bold" />
                                 </StackPanel>
-                                <TextBlock Grid.Column="1"
-                                           Text="{Binding Cursor.PlanLabel}"
-                                           Style="{StaticResource SecondaryTextStyle}"
-                                           FontSize="11" />
+                                <StackPanel Grid.Column="1"
+                                            Orientation="Horizontal"
+                                            VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Cursor.PlanLabel}"
+                                               Style="{StaticResource SecondaryTextStyle}"
+                                               FontSize="11"
+                                               VerticalAlignment="Center" />
+                                    <Button Content="{Binding Cursor.RefreshGlyph}"
+                                            IsEnabled="{Binding Cursor.CanRefresh}"
+                                            Style="{StaticResource ProviderRefreshButtonStyle}"
+                                            Tag="Cursor"
+                                            ToolTip="Refresh Cursor"
+                                            AutomationProperties.Name="Refresh Cursor"
+                                            Click="ProviderRefreshButton_Click" />
+                                </StackPanel>
                             </Grid>
                             <Border Visibility="{Binding Cursor.StatusVisibility}"
                                     Background="{Binding Cursor.StatusBackground}"

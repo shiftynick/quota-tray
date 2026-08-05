@@ -121,6 +121,7 @@ public sealed class ProviderQuotaViewModel : INotifyPropertyChanged
     private MediaBrush _statusBackground = NeutralStatusBackground;
     private System.Windows.Visibility _statusVisibility = System.Windows.Visibility.Visible;
     private bool _isStale;
+    private bool _isRefreshing;
 
     public ProviderQuotaViewModel(string name, MediaBrush accent)
     {
@@ -130,6 +131,26 @@ public sealed class ProviderQuotaViewModel : INotifyPropertyChanged
 
     public string Name { get; }
     public ObservableCollection<QuotaWindowViewModel> Windows { get; } = [];
+
+    public bool IsRefreshing
+    {
+        get => _isRefreshing;
+        set
+        {
+            if (EqualityComparer<bool>.Default.Equals(_isRefreshing, value))
+            {
+                return;
+            }
+
+            _isRefreshing = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CanRefresh));
+            OnPropertyChanged(nameof(RefreshGlyph));
+        }
+    }
+
+    public bool CanRefresh => !_isRefreshing;
+    public string RefreshGlyph => _isRefreshing ? "…" : "↻";
 
     public string PlanLabel
     {
@@ -336,23 +357,62 @@ public sealed class QuotaViewModel : INotifyPropertyChanged
         Claude.Apply(claude, ShowPacingInsights);
         Codex.Apply(codex, ShowPacingInsights);
         Cursor.Apply(cursor, ShowPacingInsights);
+        UpdateLastUpdatedText(claude, codex, cursor);
+    }
 
-        var successfulTimes = new[] { claude, codex, cursor }
+    public void ApplyProvider(ProviderSnapshot snapshot)
+    {
+        var provider = GetProvider(snapshot.Provider);
+        provider.Apply(snapshot, ShowPacingInsights);
+        UpdateLastUpdatedText(snapshot);
+    }
+
+    public ProviderQuotaViewModel GetProvider(string provider) =>
+        provider switch
+        {
+            "Claude" => Claude,
+            "Codex" => Codex,
+            "Cursor" => Cursor,
+            _ => throw new ArgumentOutOfRangeException(nameof(provider), provider, null)
+        };
+
+    private void UpdateLastUpdatedText(params ProviderSnapshot[] snapshots)
+    {
+        var successfulTimes = snapshots
             .Where(snapshot => snapshot.Error is null && snapshot.FetchedAt is not null)
             .Select(snapshot => snapshot.FetchedAt!.Value)
             .ToArray();
-        var hasError = claude.Error is not null ||
-                       codex.Error is not null ||
-                       cursor.Error is not null;
+        var hasStale = Claude.IsStale || Codex.IsStale || Cursor.IsStale;
 
         if (successfulTimes.Length == 0)
         {
-            LastUpdatedText = "Refresh failed · showing the last available data";
+            if (Claude.Windows.Count == 0 &&
+                Codex.Windows.Count == 0 &&
+                Cursor.Windows.Count == 0)
+            {
+                LastUpdatedText = "Refresh failed · showing the last available data";
+            }
+            else if (hasStale &&
+                     !LastUpdatedText.Contains("stale", StringComparison.OrdinalIgnoreCase))
+            {
+                if (LastUpdatedText.StartsWith("Updated ", StringComparison.Ordinal))
+                {
+                    LastUpdatedText =
+                        "Last successful update " +
+                        LastUpdatedText["Updated ".Length..] +
+                        " · some data is stale";
+                }
+                else
+                {
+                    LastUpdatedText = "Some data is stale · refresh a provider to update";
+                }
+            }
+
             return;
         }
 
         var latest = successfulTimes.Max().LocalDateTime;
-        LastUpdatedText = hasError
+        LastUpdatedText = hasStale
             ? $"Last successful update {latest:t} · some data is stale"
             : $"Updated {latest:t}";
     }

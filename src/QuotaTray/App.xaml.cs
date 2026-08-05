@@ -32,7 +32,10 @@ public partial class App : System.Windows.Application
     private DateTimeOffset? _lastClaudeFetchedAt;
     private DateTimeOffset? _lastCodexFetchedAt;
     private DateTimeOffset? _lastCursorFetchedAt;
-    private int _refreshing;
+    private int _fullRefreshing;
+    private int _claudeRefreshing;
+    private int _codexRefreshing;
+    private int _cursorRefreshing;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -55,6 +58,8 @@ public partial class App : System.Windows.Application
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         _window = new MainWindow(_viewModel);
         _window.RefreshRequested += async (_, _) => await RefreshAsync(forceClaude: true);
+        _window.ProviderRefreshRequested += async (_, provider) =>
+            await RefreshProviderAsync(provider);
         _window.SizeChanged += (_, _) =>
         {
             if (_window.IsVisible)
@@ -175,12 +180,23 @@ public partial class App : System.Windows.Application
     private async Task RefreshAsync(bool forceClaude = false)
     {
         if (_viewModel is null ||
-            Interlocked.Exchange(ref _refreshing, 1) == 1)
+            Interlocked.CompareExchange(ref _fullRefreshing, 1, 0) != 0)
         {
             return;
         }
 
+        if (Volatile.Read(ref _claudeRefreshing) != 0 ||
+            Volatile.Read(ref _codexRefreshing) != 0 ||
+            Volatile.Read(ref _cursorRefreshing) != 0)
+        {
+            Interlocked.Exchange(ref _fullRefreshing, 0);
+            return;
+        }
+
         _viewModel.IsRefreshing = true;
+        _viewModel.Claude.IsRefreshing = true;
+        _viewModel.Codex.IsRefreshing = true;
+        _viewModel.Cursor.IsRefreshing = true;
         _window?.SetRefreshEnabled(false);
 
         try
@@ -217,10 +233,116 @@ public partial class App : System.Windows.Application
         }
         finally
         {
+            _viewModel.Claude.IsRefreshing = false;
+            _viewModel.Codex.IsRefreshing = false;
+            _viewModel.Cursor.IsRefreshing = false;
             _viewModel.IsRefreshing = false;
             _window?.SetRefreshEnabled(true);
-            Interlocked.Exchange(ref _refreshing, 0);
+            Interlocked.Exchange(ref _fullRefreshing, 0);
         }
+    }
+
+    private async Task RefreshProviderAsync(string provider)
+    {
+        if (_viewModel is null || Volatile.Read(ref _fullRefreshing) != 0)
+        {
+            return;
+        }
+
+        var refreshingFlag = provider switch
+        {
+            "Claude" => 0,
+            "Codex" => 1,
+            "Cursor" => 2,
+            _ => -1
+        };
+        if (refreshingFlag < 0 || !TryBeginProviderRefresh(refreshingFlag))
+        {
+            return;
+        }
+
+        var providerViewModel = _viewModel.GetProvider(provider);
+        providerViewModel.IsRefreshing = true;
+        UpdateHeaderRefreshEnabled();
+
+        try
+        {
+            var snapshot = provider switch
+            {
+                "Claude" => await ReadSafelyAsync(
+                    token => _claudeService.ReadAsync(forceRefresh: true, token),
+                    "Claude",
+                    _shutdown.Token),
+                "Codex" => await ReadSafelyAsync(
+                    _codexService.ReadAsync,
+                    "Codex",
+                    _shutdown.Token),
+                "Cursor" => await ReadSafelyAsync(
+                    _cursorService.ReadAsync,
+                    "Cursor",
+                    _shutdown.Token),
+                _ => ProviderSnapshot.Failed(provider, "Unknown provider.")
+            };
+
+            if (snapshot.FetchedAt is not null)
+            {
+                switch (provider)
+                {
+                    case "Claude":
+                        _lastClaudeFetchedAt = snapshot.FetchedAt;
+                        break;
+                    case "Codex":
+                        _lastCodexFetchedAt = snapshot.FetchedAt;
+                        break;
+                    case "Cursor":
+                        _lastCursorFetchedAt = snapshot.FetchedAt;
+                        break;
+                }
+            }
+
+            _viewModel.ApplyProvider(snapshot);
+            UpdateTrayText();
+        }
+        finally
+        {
+            providerViewModel.IsRefreshing = false;
+            EndProviderRefresh(refreshingFlag);
+            UpdateHeaderRefreshEnabled();
+        }
+    }
+
+    private bool TryBeginProviderRefresh(int flag) =>
+        flag switch
+        {
+            0 => Interlocked.CompareExchange(ref _claudeRefreshing, 1, 0) == 0,
+            1 => Interlocked.CompareExchange(ref _codexRefreshing, 1, 0) == 0,
+            2 => Interlocked.CompareExchange(ref _cursorRefreshing, 1, 0) == 0,
+            _ => false
+        };
+
+    private void EndProviderRefresh(int flag)
+    {
+        switch (flag)
+        {
+            case 0:
+                Interlocked.Exchange(ref _claudeRefreshing, 0);
+                break;
+            case 1:
+                Interlocked.Exchange(ref _codexRefreshing, 0);
+                break;
+            case 2:
+                Interlocked.Exchange(ref _cursorRefreshing, 0);
+                break;
+        }
+    }
+
+    private void UpdateHeaderRefreshEnabled()
+    {
+        var busy = Volatile.Read(ref _fullRefreshing) != 0 ||
+                   Volatile.Read(ref _claudeRefreshing) != 0 ||
+                   Volatile.Read(ref _codexRefreshing) != 0 ||
+                   Volatile.Read(ref _cursorRefreshing) != 0;
+        _window?.SetRefreshEnabled(!busy);
     }
 
     private void ScheduleNextBackgroundRefresh()

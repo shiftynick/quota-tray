@@ -96,6 +96,61 @@ public sealed class StateAndSettingsTests
     }
 
     [Fact]
+    public void ApplyProvider_UpdatesOnlyThatProvider()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var viewModel = new QuotaViewModel();
+        viewModel.Apply(
+            new ProviderSnapshot(
+                "Claude",
+                "Max",
+                [new QuotaWindowSnapshot("weekly", "7-day limit", 80, now.AddDays(6), TimeSpan.FromDays(7))],
+                null,
+                now),
+            new ProviderSnapshot(
+                "Codex",
+                "Plus",
+                [new QuotaWindowSnapshot("weekly", "7-day limit", 50, now.AddDays(4), TimeSpan.FromDays(7))],
+                null,
+                now),
+            new ProviderSnapshot(
+                "Cursor",
+                "Pro",
+                [new QuotaWindowSnapshot("included", "Included", 25, now.AddDays(10), TimeSpan.FromDays(30))],
+                null,
+                now));
+
+        viewModel.ApplyProvider(
+            new ProviderSnapshot(
+                "Cursor",
+                "Pro",
+                [new QuotaWindowSnapshot("included", "Included", 40, now.AddDays(10), TimeSpan.FromDays(30))],
+                null,
+                now.AddMinutes(1)));
+
+        Assert.Equal(80, viewModel.Claude.Windows[0].RemainingPercent);
+        Assert.Equal(50, viewModel.Codex.Windows[0].RemainingPercent);
+        Assert.Equal(40, viewModel.Cursor.Windows[0].RemainingPercent);
+        Assert.StartsWith("Updated", viewModel.LastUpdatedText);
+    }
+
+    [Fact]
+    public void ProviderRefreshing_DisablesRefreshGlyph()
+    {
+        var viewModel = new ProviderQuotaViewModel(
+            "Claude",
+            System.Windows.Media.Brushes.Orange);
+
+        Assert.True(viewModel.CanRefresh);
+        Assert.Equal("↻", viewModel.RefreshGlyph);
+
+        viewModel.IsRefreshing = true;
+
+        Assert.False(viewModel.CanRefresh);
+        Assert.Equal("…", viewModel.RefreshGlyph);
+    }
+
+    [Fact]
     public void SettingsStore_RoundTripsPacingPreference()
     {
         var root = Path.Combine(Path.GetTempPath(), "QuotaTray.Tests", Guid.NewGuid().ToString("N"));

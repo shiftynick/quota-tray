@@ -12,7 +12,7 @@
     <Product>Quota Tray</Product>
     <ApplicationIcon>..\..\assets\quota-tray.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>0.1.5</Version>
+    <Version>0.1.6</Version>
     <Authors>shiftynick</Authors>
     <Description>Windows tray utility for Claude, Codex, and Cursor subscription quotas.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

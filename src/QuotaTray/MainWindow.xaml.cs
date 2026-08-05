@@ -7,6 +7,7 @@ namespace QuotaTray;
 public partial class MainWindow : Window
 {
     public event EventHandler? RefreshRequested;
+    public event EventHandler<string>? ProviderRefreshRequested;
     public bool AllowClose { get; set; }
 
     public MainWindow(QuotaViewModel viewModel)
@@ -25,6 +26,14 @@ public partial class MainWindow : Window
     private void RefreshButton_Click(object sender, RoutedEventArgs e)
     {
         RefreshRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void ProviderRefreshButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is System.Windows.Controls.Button { Tag: string provider })
+        {
+            ProviderRefreshRequested?.Invoke(this, provider);
+        }
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)

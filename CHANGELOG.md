@@ -7,6 +7,12 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-08-05
+
+### Added
+
+- Per-provider refresh buttons on Claude, Codex, and Cursor cards.
+
 ## [0.1.5] - 2026-08-04
 
 ### Added
